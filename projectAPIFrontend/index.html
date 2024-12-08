@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: 'Calibri', sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Glavni container za vsebino */
+        .container {
+            background-color: white; 
+            border-radius: 8px; 
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+            width: 100%;
+            max-width: 400px; 
+        }
+
+        /* Naslov */
+        h1 {
+            text-align: center;
+            color: #333; /* Temno siva barva */
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        /* Oblika za input polji */
+        label {
+            font-size: 20px;
+            color: #000000; 
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input[type="text"] {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 20px;
+            background-color: #f9f9f9;
+        }
+
+        /* Gumb */
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50; /* Zelena barva */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049; 
+        }
+
+        /* Prikaz odgovorov */
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            display: block;
+            height: 60px;
+        }
+
+        /* Uspešno sporočilo */
+        #response.success {
+            background-color: #e7f9e7; 
+            color: #4CAF50; 
+        }
+
+        /* Sporočilo napake */
+        #response.error {
+            background-color: #f9e7e7; 
+            color: #e74c3c; 
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Test</h1>
+        <form id="messageForm">
+            <label for="subject">Subject:</label>
+            <input type="text" id="subject" name="subject" required><br>
+            
+            <label for="message">Message:</label>
+            <input type="text" id="message" name="message" required><br>
+            
+            <button type="submit">Submit</button>
+        </form>
+        <div id="response"></div>
+    </div>
+    
+    <script>
+        const config = {
+            apiBaseUrl: 'http://localhost:5050/api'  // BackendUrl
+        };
+    </script>
+
+    <script>
+        document.getElementById('messageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();  // Prepreči privzeto dejanje (pošiljanje obrazca)
+            
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+
+            const responseDiv = document.getElementById('response');
+            responseDiv.style.display = 'block';  // Prikazovanje odgovora
+            responseDiv.classList.remove('success', 'error');
+            responseDiv.innerHTML = `<p>Sending...</p>`;
+
+            try {
+                // Pošljemo POST request na strežnik
+                const postResponse = await fetch(`${config.apiBaseUrl}/message`, {
+                    method: 'POST', // metoda POST
+                    headers: { 'Content-Type': 'application/json' }, //pošiljanje JSON
+                    body: JSON.stringify({ Subject: subject, Message: message }) //pretvorba v JSON objekt
+                });
+
+                const postResult = await postResponse.json(); 
+
+                if (postResponse.ok && postResult.status) {
+
+                    // GET request za pridobitev sporočil
+                    const getResponse = await fetch(`${config.apiBaseUrl}/message`);
+                    const getResult = await getResponse.json();
+
+                    if (getResponse.ok && getResult.status) {
+
+                        // Združimo sporočila v eno vrstico, ločimo z vejico in presledkom
+                        const messageText = getResult.numericalMessages.join(', ');
+
+                        // Prikaz rezultatov v responseDiv
+                        responseDiv.innerHTML = `<p>Messages: ${messageText}</p>`;
+                        responseDiv.classList.add('success'); 
+                    } else {
+                        responseDiv.innerHTML = `<p>Failed to fetch messages: ${getResult.message}</p>`;
+                        responseDiv.classList.add('error'); 
+                    }
+                } else {
+                    responseDiv.innerHTML = `<p>Response Error: ${postResult.message}</p>`;
+                    responseDiv.classList.add('error'); 
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<p>Caught Error: ${error.message}</p>`;
+                responseDiv.classList.add('error'); 
+            }
+        });
+    </script>
+</body>
+</html>
